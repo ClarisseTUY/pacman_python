@@ -9,7 +9,7 @@ import numpy as np
 #   Partie I : variables du jeu  -  placez votre code dans cette section
 #
 #########################################################################
- 
+score = 0
 # Plan du labyrinthe
 
 # 0 vide
@@ -299,8 +299,6 @@ AfficherPage(0)
 #  Partie III :   Gestion de partie   -   placez votre code dans cette section
 #
 #########################################################################
-
-score = 0
       
 def PacManPossibleMove():
    L = []
@@ -321,18 +319,46 @@ def GhostsPossibleMove(x,y):
    
 
 def IAPacman():
-   global PacManPos, Ghosts, score, TBL2
+   global PacManPos, Ghosts, score
+   new_map=update_distance_map(distance_map)
    #deplacement Pacman
    L = PacManPossibleMove()
-   choix = random.randrange(len(L))
-   PacManPos[0] += L[choix][0]
-   PacManPos[1] += L[choix][1]
-   
+      
+   #pacman mange
    if GUM[PacManPos[0]][PacManPos[1]]==1:
       GUM[PacManPos[0]][PacManPos[1]]=0
       score += 100
 
-   new_map=update_distance_map(distance_map)
+   #choix = random.randrange(len(L))
+    # Initialiser une liste pour stocker les distances valides et leurs indices
+   distances_voisins = []
+
+    # Vérifier chaque mouvement possible
+   for index, (dx, dy) in enumerate(L):
+      new_x = PacManPos[0] + dx
+      new_y = PacManPos[1] + dy
+      if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:  # Vérifie que la nouvelle position est dans la grille
+         if distance_map[new_x][new_y] != 1000:  # Vérifie que la nouvelle position n'est pas un obstacle
+            distances_voisins.append((distance_map[new_x][new_y], index))
+
+    # Trouver l'index du mouvement avec la plus petite distance
+# Trouver l'index du mouvement avec la plus petite distance
+   if distances_voisins:
+      min_distance_index = None
+      min_distance = float('inf')
+      for distance, index in distances_voisins:
+         if distance < min_distance:
+               min_distance = distance
+               min_distance_index = index
+      choix = min_distance_index
+
+
+        # Mettre à jour la position de Pac-Man
+      PacManPos[0] += L[choix][0]
+      PacManPos[1] += L[choix][1]
+
+
+
    #new_map=distance_map
 
 
@@ -341,21 +367,40 @@ def IAPacman():
       for y in range(HAUTEUR):
          info = "{}".format(new_map[x][y])
          SetInfo1(x,y,info)
-         
-def update_distance_map(distance_map):
-    for j in range(1, HAUTEUR - 1):
-        for i in range(1, LARGEUR - 1):
-            if distance_map[i][j] < (HAUTEUR - 1) * (LARGEUR - 1):
-               if distance_map[i][j]==0 and PacManPos[0] == i and PacManPos[1]==j:
-                  min_neighbor = min(distance_map[PacManPos[0] - 1][PacManPos[1]], distance_map[PacManPos[0] + 1][PacManPos[1]], distance_map[PacManPos[0]][PacManPos[1] - 1], distance_map[PacManPos[0]][PacManPos[1] + 1],distance_map[PacManPos[0]][PacManPos[1] - 1])
-                  distance_map[i][j] = min_neighbor + 1
-                  
-               if distance_map[i][j]!=0:
-                  min_neighbor = min(distance_map[i - 1][j], distance_map[i + 1][j], distance_map[i][j- 1], distance_map[i][j+ 1])
-                  distance_map[i][j] = min_neighbor + 1
 
+def update_distance_map(distance_map):
+    global PacManPos
+    changement = True  # Initialement, nous supposons qu'il y a des changements
+    while changement:
+        changement = False  # Réinitialiser le drapeau à chaque itération
+        for j in range(1, HAUTEUR - 1):
+            for i in range(1, LARGEUR - 1):
+                if distance_map[i][j] < (HAUTEUR - 1) * (LARGEUR - 1):
+                    if distance_map[i][j] == 0 and PacManPos[0] == i and PacManPos[1] == j:
+                        min_neighbor = min(
+                            distance_map[PacManPos[0] - 1][PacManPos[1]], 
+                            distance_map[PacManPos[0] + 1][PacManPos[1]], 
+                            distance_map[PacManPos[0]][PacManPos[1] - 1], 
+                            distance_map[PacManPos[0]][PacManPos[1] + 1]
+                        )
+                        new_distance = min_neighbor + 1
+                        if distance_map[i][j] != new_distance:
+                            distance_map[i][j] = new_distance
+                            changement = True
+                    elif distance_map[i][j] != 0:
+                        min_neighbor = min(
+                            distance_map[i - 1][j], 
+                            distance_map[i + 1][j], 
+                            distance_map[i][j - 1], 
+                            distance_map[i][j + 1]
+                        )
+                        new_distance = min_neighbor + 1
+                        if distance_map[i][j] != new_distance:
+                            distance_map[i][j] = new_distance
+                            changement = True
     return distance_map
-   
+
+
 def IAGhosts():
    #deplacement Fantome
    for F in Ghosts:
