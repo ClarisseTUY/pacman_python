@@ -349,9 +349,11 @@ def update_distance_map(distance_map):
                if distance_map[i][j]==0 and PacManPos[0] == i and PacManPos[1]==j:
                   min_neighbor = min(distance_map[PacManPos[0] - 1][PacManPos[1]], distance_map[PacManPos[0] + 1][PacManPos[1]], distance_map[PacManPos[0]][PacManPos[1] - 1], distance_map[PacManPos[0]][PacManPos[1] + 1],distance_map[PacManPos[0]][PacManPos[1] - 1])
                   distance_map[i][j] = min_neighbor + 1
-               elif distance_map[i][j]!=0:
-                  min_neighbor = min(distance_map[i - 1][j], distance_map[i + 1][j], distance_map[i][j- 1], distance_map[i][j+ 1],distance_map[i][j - 1])
+                  
+               if distance_map[i][j]!=0:
+                  min_neighbor = min(distance_map[i - 1][j], distance_map[i + 1][j], distance_map[i][j- 1], distance_map[i][j+ 1])
                   distance_map[i][j] = min_neighbor + 1
+
     return distance_map
    
 def IAGhosts():
