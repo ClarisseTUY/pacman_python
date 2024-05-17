@@ -376,6 +376,7 @@ def update_distance_map(distance_map):
         for j in range(1, HAUTEUR - 1):
             for i in range(1, LARGEUR - 1):
                 if distance_map[i][j] < (HAUTEUR - 1) * (LARGEUR - 1):
+                     #quand pacman mange, on recalcule la distance du points en calculant le minimum
                     if distance_map[i][j] == 0 and PacManPos[0] == i and PacManPos[1] == j:
                         min_neighbor = min(
                             distance_map[PacManPos[0] - 1][PacManPos[1]], 
