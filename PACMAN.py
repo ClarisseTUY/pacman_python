@@ -10,6 +10,9 @@ import numpy as np
 #
 #########################################################################
 score = 0
+nb_pac_gommes=0
+END_FLAG = False
+
 # Plan du labyrinthe
 
 # 0 vide
@@ -40,7 +43,7 @@ HAUTEUR = TBL.shape [1]
 LARGEUR = TBL.shape [0]  
 
 def create_distance_map(grid):
-    global HAUTEUR, LARGEUR
+    global HAUTEUR, LARGEUR, nb_pac_gommes
     T = np.array(grid, dtype=np.int32)
 
     G = 1000  # Valeur G très grande
@@ -51,6 +54,7 @@ def create_distance_map(grid):
             if grid[i][j] == 1:  # Correction de l'ordre des indices
                 T[i][j] = G
             elif grid[i][j] == 0:
+                nb_pac_gommes+=1;
                 T[i][j] = 0
             else:
                 T[i][j] = M
@@ -319,7 +323,7 @@ def GhostsPossibleMove(x,y):
    
 
 def IAPacman():
-   global PacManPos, Ghosts, score
+   global PacManPos, Ghosts, score, nb_pac_gommes
    new_map=update_distance_map(distance_map)
    #deplacement Pacman
    L = PacManPossibleMove()
@@ -328,6 +332,7 @@ def IAPacman():
    if GUM[PacManPos[0]][PacManPos[1]]==1:
       GUM[PacManPos[0]][PacManPos[1]]=0
       score += 100
+      nb_pac_gommes-=1
 
    #choix = random.randrange(len(L))
     # Initialiser une liste pour stocker les distances valides et leurs indices
@@ -418,12 +423,14 @@ def IAGhosts():
 
 iteration = 0
 def PlayOneTurn():
-   global iteration
+   global iteration, END_FLAG
    
-   if not PAUSE_FLAG : 
+   if not PAUSE_FLAG and not END_FLAG : 
       iteration += 1
       if iteration % 2 == 0 :   
          IAPacman()
+         if nb_pac_gommes==0 :
+            END_FLAG=True
       else:                    
          IAGhosts()
    
