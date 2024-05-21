@@ -42,30 +42,6 @@ TBL = CreateArray([
 HAUTEUR = TBL.shape [1]      
 LARGEUR = TBL.shape [0]  
 
-def create_distance_map(grid):
-    global HAUTEUR, LARGEUR, nb_pac_gommes
-    T = np.array(grid, dtype=np.int32)
-
-    G = 1000  # Valeur G très grande
-    M = HAUTEUR * LARGEUR  # Valeur M correspondant à la surface totale du labyrinthe
-
-    for i in range(LARGEUR):  # Utilise LARGEUR pour l'indice i
-        for j in range(HAUTEUR):  # Utilise HAUTEUR pour l'indice j
-            if grid[i][j] == 1:  # Correction de l'ordre des indices
-                T[i][j] = G
-            elif grid[i][j] == 0:
-                nb_pac_gommes+=1;
-                T[i][j] = 0
-            else:
-                T[i][j] = M
-
-    return T
-
-# Création de la carte des distances
-distance_map = create_distance_map(TBL)
-
-# placements des pacgums et des fantomes
-
 def PlacementsGUM():  # placements des pacgums
    GUM = np.zeros(TBL.shape,dtype=np.int32)
    
@@ -88,6 +64,46 @@ Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "orange","left",False] )
 Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "cyan"  ,"left",False]   )
 Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "red"  ,"left",False ]     )         
 
+
+
+def create_distance_map(grid):
+    global HAUTEUR, LARGEUR, nb_pac_gommes
+    T = np.array(grid, dtype=np.int32)
+
+    G = 1000  # Valeur G très grande
+    M = HAUTEUR * LARGEUR  # Valeur M correspondant à la surface totale du labyrinthe
+
+    for i in range(LARGEUR):  # Utilise LARGEUR pour l'indice i
+        for j in range(HAUTEUR):  # Utilise HAUTEUR pour l'indice j
+            if grid[i][j] == 1:  # Correction de l'ordre des indices
+                T[i][j] = G
+            elif grid[i][j] == 0:
+                nb_pac_gommes+=1;
+                T[i][j] = 0
+            else:
+                T[i][j] = M
+
+    return T
+
+def create_distance_map_ghost(grid):
+    global HAUTEUR, LARGEUR 
+    T = np.array(grid, dtype=np.int32)
+
+    G = 1000  # Valeur G très grande
+    M = HAUTEUR * LARGEUR  # Valeur M correspondant à la surface totale du labyrinthe
+
+    for i in range(LARGEUR):  # Utilise LARGEUR pour l'indice i
+        for j in range(HAUTEUR):  # Utilise HAUTEUR pour l'indice j # Fantômes ne peuvent pas traverser les murs ou la maison des fantômes
+                T[i][j] = G
+                
+    for F in Ghosts:
+      T[F[0]][F[1]] =0 
+    return T
+
+# Création de la carte des distances
+distance_map = create_distance_map(TBL)
+distance_map_G = create_distance_map_ghost(TBL)
+# placements des pacgums et des fantomes
 
 
 ##############################################################################
@@ -324,10 +340,12 @@ def GhostsPossibleMove(x, y, is_outside):
 
 collision = False
    
+new=distance_map_G
 
 def IAPacman():
-   global PacManPos, Ghosts, score, nb_pac_gommes, collision
+   global PacManPos, Ghosts, score, nb_pac_gommes, collision, new
    new_map=update_distance_map(distance_map)
+   new=update_distance_map_ghost(distance_map_G)
    #deplacement Pacman
    L = PacManPossibleMove()
       
@@ -346,8 +364,8 @@ def IAPacman():
       new_x = PacManPos[0] + dx
       new_y = PacManPos[1] + dy
       if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:  # Vérifie que la nouvelle position est dans la grille
-         if distance_map[new_x][new_y] != 1000:  # Vérifie que la nouvelle position n'est pas un obstacle
-            distances_voisins.append((distance_map[new_x][new_y], index))
+         if new_map[new_x][new_y] != 1000:  # Vérifie que la nouvelle position n'est pas un obstacle
+            distances_voisins.append((new_map[new_x][new_y], index))
 
     # Trouver l'index du mouvement avec la plus petite distance
 # Trouver l'index du mouvement avec la plus petite distance
@@ -374,6 +392,9 @@ def IAPacman():
       for y in range(HAUTEUR):
          info = "{}".format(new_map[x][y])
          SetInfo1(x,y,info)
+
+         info2 = "{}".format(new[x][y])
+         SetInfo2(x,y,info2)
 
 
 def update_distance_map(distance_map):
@@ -409,9 +430,43 @@ def update_distance_map(distance_map):
                             changement = True
     return distance_map
 
+def update_distance_map_ghost(distance_map):
+    global Ghosts
+    G = 1000  # Valeur très grande pour les murs et les obstacles
+    M = HAUTEUR * LARGEUR  # Valeur correspondant à la surface totale du labyrinthe
+
+    # Initialize the distance map while keeping the walls at 1000
+    for i in range(LARGEUR):
+        for j in range(HAUTEUR):
+            if TBL[i][j] == 1:  # Wall
+                distance_map[i][j] = G
+            else:
+                distance_map[i][j] = M
+
+    # Place the ghosts with an initial distance of 0
+    for F in Ghosts:
+        distance_map[F[0]][F[1]] = 0
+
+    # Use a queue for breadth-first search (BFS)
+    queue = [(F[0], F[1]) for F in Ghosts]
+
+    while queue:
+        x, y = queue.pop(0)
+        current_distance = distance_map[x][y]
+        # Check neighbors
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < LARGEUR and 0 <= ny < HAUTEUR:
+                if TBL[nx][ny] != 1 and distance_map[nx][ny] > current_distance + 1:
+                    distance_map[nx][ny] = current_distance + 1
+                    queue.append((nx, ny))
+
+    return distance_map
+
 
 def IAGhosts():
-    global collision
+    global collision, distance_map_G
+
     for F in Ghosts:
         possible_moves = GhostsPossibleMove(F[0], F[1], F[4])
         next_move = None
@@ -430,6 +485,7 @@ def IAGhosts():
         F[0] += next_move[0][0]
         F[1] += next_move[0][1]
         F[3] = next_move[1]
+
 
         # On met à jour l'état du fantôme que s'il est sorti de la maison des fantômes
         if TBL[F[0]][F[1]] != 2:
