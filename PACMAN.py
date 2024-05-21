@@ -83,10 +83,10 @@ GUM = PlacementsGUM()
 PacManPos = [5,5]
 
 Ghosts  = []
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "pink"  ]   )
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "orange"] )
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "cyan"  ]   )
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "red"   ]     )         
+Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "pink" ,"left",False]   )
+Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "orange","left",False] )
+Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "cyan"  ,"left",False]   )
+Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "red"  ,"left",False ]     )         
 
 
 
@@ -313,13 +313,15 @@ def PacManPossibleMove():
    if ( TBL[x-1][y  ] == 0 ): L.append((-1,0))
    return L
    
-def GhostsPossibleMove(x,y):
-   L = []
-   if ( TBL[x  ][y-1] == 2 ): L.append((0,-1))
-   if ( TBL[x  ][y+1] == 2 ): L.append((0, 1))
-   if ( TBL[x+1][y  ] == 2 ): L.append(( 1,0))
-   if ( TBL[x-1][y  ] == 2 ): L.append((-1,0))
-   return L
+def GhostsPossibleMove(x, y, is_outside):
+    L = []
+    if (TBL[x][y-1] == 0) or (not is_outside and TBL[x][y-1] == 2): L.append(((0, -1), "up"))
+    if (TBL[x][y+1] == 0) or (not is_outside and TBL[x][y+1] == 2): L.append(((0, 1), "down"))
+    if (TBL[x+1][y] ==0) or (not is_outside and TBL[x+1][y] == 2): L.append(((1, 0), "right"))
+    if (TBL[x-1][y] == 0) or (not is_outside and TBL[x-1][y] == 2): L.append(((-1, 0), "left"))
+    return L
+
+
    
 
 def IAPacman():
@@ -408,12 +410,30 @@ def update_distance_map(distance_map):
 
 
 def IAGhosts():
-   #deplacement Fantome
-   for F in Ghosts:
-      L = GhostsPossibleMove(F[0],F[1])
-      choix = random.randrange(len(L))
-      F[0] += L[choix][0]
-      F[1] += L[choix][1]
+    for F in Ghosts:
+        possible_moves = GhostsPossibleMove(F[0], F[1], F[4])
+        next_move = None
+        
+        # Si le fantôme peut continuer dans sa direction actuelle
+        for move in possible_moves:
+            if move[1] == F[3]:  # Compare avec la direction courante
+                next_move = move
+                break
+        
+        # Si le fantôme ne peut pas continuer dans sa direction actuelle ou un croisement
+        if not next_move or len(possible_moves) > 2:
+            next_move = random.choice(possible_moves)
+        
+        # Mise à jour de la position et de la direction courante
+        F[0] += next_move[0][0]
+        F[1] += next_move[0][1]
+        F[3] = next_move[1]
+
+        # On met à jour l'état du fantôme que s'il est sorti de la maison des fantômes
+        if TBL[F[0]][F[1]] != 2:
+            F[4] = True
+
+
       
   
  
