@@ -322,10 +322,11 @@ def GhostsPossibleMove(x, y, is_outside):
     return L
 
 
+collision = False
    
 
 def IAPacman():
-   global PacManPos, Ghosts, score, nb_pac_gommes
+   global PacManPos, Ghosts, score, nb_pac_gommes, collision
    new_map=update_distance_map(distance_map)
    #deplacement Pacman
    L = PacManPossibleMove()
@@ -364,8 +365,7 @@ def IAPacman():
       PacManPos[0] += L[choix][0]
       PacManPos[1] += L[choix][1]
 
-
-
+   test_collision()
    #new_map=distance_map
 
 
@@ -374,6 +374,7 @@ def IAPacman():
       for y in range(HAUTEUR):
          info = "{}".format(new_map[x][y])
          SetInfo1(x,y,info)
+
 
 def update_distance_map(distance_map):
     global PacManPos
@@ -410,6 +411,7 @@ def update_distance_map(distance_map):
 
 
 def IAGhosts():
+    global collision
     for F in Ghosts:
         possible_moves = GhostsPossibleMove(F[0], F[1], F[4])
         next_move = None
@@ -433,11 +435,16 @@ def IAGhosts():
         if TBL[F[0]][F[1]] != 2:
             F[4] = True
 
+    test_collision()
 
-      
+def test_collision():
+   global PacManPos, collision, END_FLAG
+   collision = False
+   for F in Ghosts :
+      collision = PacManPos[0]==F[0] and PacManPos[1]==F[1]
+      if collision == True :
+         END_FLAG = True
   
- 
-
  
 #  Boucle principale de votre jeu appelée toutes les 500ms
 
