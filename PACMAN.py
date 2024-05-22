@@ -348,17 +348,40 @@ def IAPacman():
    new=update_distance_map_ghost(distance_map_G)
    #deplacement Pacman
    L = PacManPossibleMove()
-      
    #pacman mange
    if GUM[PacManPos[0]][PacManPos[1]]==1:
       GUM[PacManPos[0]][PacManPos[1]]=0
       score += 100
       nb_pac_gommes-=1
 
+   if new[PacManPos[0]][PacManPos[1]]>3:
+      choix = recherche_gom(new_map,L)
+   else : 
+      choix = fuite(new,L)
+
+   # Mettre à jour la position de Pac-Man
+   PacManPos[0] += L[choix][0]
+   PacManPos[1] += L[choix][1]
+
+   test_collision()
+   affichage_distances(new_map, new)
+
+
+def affichage_distances(new_map, new):
+   # juste pour montrer comment on se sert de la fonction SetInfo1
+   for x in range(LARGEUR):
+      for y in range(HAUTEUR):
+         info = "{}".format(new_map[x][y])
+         if(new_map[x][y]<HAUTEUR*LARGEUR and new_map[x][y]!=0):
+            SetInfo1(x,y,info)
+         info2 = "{}".format(new[x][y])
+         if(new[x][y]<HAUTEUR*LARGEUR ):
+            SetInfo2(x,y,info2)
+
+def recherche_gom(new_map,L):
    #choix = random.randrange(len(L))
     # Initialiser une liste pour stocker les distances valides et leurs indices
    distances_voisins = []
-
     # Vérifier chaque mouvement possible
    for index, (dx, dy) in enumerate(L):
       new_x = PacManPos[0] + dx
@@ -376,26 +399,32 @@ def IAPacman():
          if distance < min_distance:
                min_distance = distance
                min_distance_index = index
-      choix = min_distance_index
 
+   return min_distance_index
 
-        # Mettre à jour la position de Pac-Man
-      PacManPos[0] += L[choix][0]
-      PacManPos[1] += L[choix][1]
+def fuite(new,L):
+   #choix = random.randrange(len(L))
+    # Initialiser une liste pour stocker les distances valides et leurs indices
+   distances_voisins = []
+    # Vérifier chaque mouvement possible
+   for index, (dx, dy) in enumerate(L):
+      new_x = PacManPos[0] + dx
+      new_y = PacManPos[1] + dy
+      if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:  # Vérifie que la nouvelle position est dans la grille
+         if new[new_x][new_y] != 1000:  # Vérifie que la nouvelle position n'est pas un obstacle
+            distances_voisins.append((new[new_x][new_y], index))
 
-   test_collision()
-   #new_map=distance_map
+    # Trouver l'index du mouvement avec la plus petite distance
+# Trouver l'index du mouvement avec la plus petite distance
+   if distances_voisins:
+      max_distance_index = None
+      max_distance = -1
+      for distance, index in distances_voisins:
+         if distance > max_distance:
+               max_distance = distance
+               max_distance_index = index
 
-
-   # juste pour montrer comment on se sert de la fonction SetInfo1
-   for x in range(LARGEUR):
-      for y in range(HAUTEUR):
-         info = "{}".format(new_map[x][y])
-         SetInfo1(x,y,info)
-
-         info2 = "{}".format(new[x][y])
-         SetInfo2(x,y,info2)
-
+   return max_distance_index
 
 def update_distance_map(distance_map):
     global PacManPos
