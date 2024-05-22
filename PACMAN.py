@@ -48,7 +48,10 @@ def PlacementsGUM():  # placements des pacgums
    for x in range(LARGEUR):
       for y in range(HAUTEUR):
          if ( TBL[x][y] == 0):
-            GUM[x][y] = 1
+            if((x==1 and y==1) or (x==1 and y==HAUTEUR-2) or (x==LARGEUR-2 and y==1) or (x==LARGEUR-2 and y==HAUTEUR-2)):
+               GUM[x][y] = 3
+            else:
+               GUM[x][y] = 1
    return GUM
             
 GUM = PlacementsGUM()   
@@ -253,8 +256,13 @@ def Affiche(PacmanColor,message):
          if ( GUM[x][y] == 1):
             xx = To(x) 
             yy = To(y)
-            e = 5
+            e=5
             canvas.create_oval(xx-e,yy-e,xx+e,yy+e,fill="orange")
+         elif(GUM[x][y]==3):
+            xx=To(x)
+            yy=To(y)
+            e=8
+            canvas.create_oval(xx-e,yy-e,xx+e,yy+e,fill="#00FF04")
             
    #extra info
    for x in range(LARGEUR):
@@ -342,20 +350,29 @@ collision = False
    
 new=distance_map_G
 
+maison = [(F[0], F[1]) for F in Ghosts if TBL[F[0]][F[1]] == 2]
+
+
 def IAPacman():
-   global PacManPos, Ghosts, score, nb_pac_gommes, collision, new
+   global PacManPos, Ghosts, score, nb_pac_gommes, collision, new, MODE_CHASSE
    new_map=update_distance_map(distance_map)
    new=update_distance_map_ghost(distance_map_G)
    #deplacement Pacman
    L = PacManPossibleMove()
    #pacman mange
-   if GUM[PacManPos[0]][PacManPos[1]]==1:
+   gum_val=GUM[PacManPos[0]][PacManPos[1]]
+   if gum_val==1 or gum_val==3:
       GUM[PacManPos[0]][PacManPos[1]]=0
       score += 100
       nb_pac_gommes-=1
 
-   if new[PacManPos[0]][PacManPos[1]]>3:
-      choix = recherche_gom(new_map,L)
+      if gum_val == 3 : 
+         MODE_CHASSE=True
+
+   if MODE_CHASSE : 
+      choix = recherche(new,L)
+   elif new[PacManPos[0]][PacManPos[1]]>3:
+      choix = recherche(new_map,L)
    else : 
       choix = fuite(new,L)
 
@@ -378,7 +395,7 @@ def affichage_distances(new_map, new):
          if(new[x][y]<HAUTEUR*LARGEUR ):
             SetInfo2(x,y,info2)
 
-def recherche_gom(new_map,L):
+def recherche(new_map,L):
    #choix = random.randrange(len(L))
     # Initialiser une liste pour stocker les distances valides et leurs indices
    distances_voisins = []
@@ -475,20 +492,22 @@ def update_distance_map_ghost(distance_map):
     # Place the ghosts with an initial distance of 0
     for F in Ghosts:
         distance_map[F[0]][F[1]] = 0
-
     # Use a queue for breadth-first search (BFS)
     queue = [(F[0], F[1]) for F in Ghosts]
-
+   #if TBL[x][y] != 2:
     while queue:
         x, y = queue.pop(0)
-        current_distance = distance_map[x][y]
-        # Check neighbors
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < LARGEUR and 0 <= ny < HAUTEUR:
-                if TBL[nx][ny] != 1 and distance_map[nx][ny] > current_distance + 1:
-                    distance_map[nx][ny] = current_distance + 1
-                    queue.append((nx, ny))
+        if TBL[x][y] == 2 :
+           distance_map[x][y]=HAUTEUR*LARGEUR
+        else :
+         current_distance = distance_map[x][y]
+         # Check neighbors
+         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+               nx, ny = x + dx, y + dy
+               if 0 <= nx < LARGEUR and 0 <= ny < HAUTEUR:
+                  if TBL[nx][ny] != 1 and distance_map[nx][ny] > current_distance + 1:
+                     distance_map[nx][ny] = current_distance + 1
+                     queue.append((nx, ny))
 
     return distance_map
 
@@ -522,22 +541,31 @@ def IAGhosts():
 
     test_collision()
 
+MODE_CHASSE= False
+
 def test_collision():
-   global PacManPos, collision, END_FLAG
+   global PacManPos, collision, END_FLAG,score, maison
    collision = False
    for F in Ghosts :
       collision = PacManPos[0]==F[0] and PacManPos[1]==F[1]
       if collision == True :
-         END_FLAG = True
+         if MODE_CHASSE :
+            new_coord = random.choice(maison)
+            F[0]=new_coord[0]
+            F[1]=new_coord[1]
+            F[4]=False
+            score+=2000
+            
+         else: 
+            END_FLAG = True
   
  
 #  Boucle principale de votre jeu appelée toutes les 500ms
-
+cpt=0
 iteration = 0
 def PlayOneTurn():
-   global iteration, END_FLAG
-   
-   if not PAUSE_FLAG and not END_FLAG : 
+   global iteration, END_FLAG, cpt, MODE_CHASSE
+   if not PAUSE_FLAG and not END_FLAG :    
       iteration += 1
       if iteration % 2 == 0 :   
          IAPacman()
@@ -545,6 +573,12 @@ def PlayOneTurn():
             END_FLAG=True
       else:                    
          IAGhosts()
+
+      if MODE_CHASSE :
+         cpt+=1 
+         if cpt==16:
+            MODE_CHASSE=False
+            cpt=0
    
    Affiche(PacmanColor="yellow", message="Score : {}".format(score))
  
