@@ -57,7 +57,7 @@ def PlacementsGUM():  # placements des pacgums
 GUM = PlacementsGUM()   
    
    
-      
+pacman_color = "yellow"
 
 PacManPos = [5,5]
 
@@ -224,7 +224,7 @@ animPacman = [ 5,10,15,10,5]
 
 
 def Affiche(PacmanColor,message):
-   global anim_bouche
+   global anim_bouche, pacman_color
    
    def CreateCircle(x,y,r,coul):
       canvas.create_oval(x-r,y-r,x+r,y+r, fill=coul, width  = 0)
@@ -282,13 +282,18 @@ def Affiche(PacmanColor,message):
          
   
    # dessine pacman
+         
+      if MODE_CHASSE:
+         pacman_color="#FB00FF"
+      else :
+         pacman_color="yellow"
    xx = To(PacManPos[0]) 
    yy = To(PacManPos[1])
    e = 20
    anim_bouche = (anim_bouche+1)%len(animPacman)
    ouv_bouche = animPacman[anim_bouche] 
    tour = 360 - 2 * ouv_bouche
-   canvas.create_oval(xx-e,yy-e, xx+e,yy+e, fill = PacmanColor)
+   canvas.create_oval(xx-e,yy-e, xx+e,yy+e, fill = pacman_color)
    canvas.create_polygon(xx,yy,xx+e,yy+ouv_bouche,xx+e,yy-ouv_bouche, fill="black")  # bouche
    
   
@@ -304,13 +309,18 @@ def Affiche(PacmanColor,message):
       CreateCircle(dec+xx,dec+yy-e+6,e,coul)
       canvas.create_rectangle(dec+xx-e,dec+yy-e,dec+xx+e+1,dec+yy+e, fill=coul, width  = 0)
       
+      if MODE_CHASSE:
+         eyes_color="white"
+      else :
+         eyes_color="black"
+
       # oeil gauche
       CreateCircle(dec+xx-7,dec+yy-8,5,"white")
-      CreateCircle(dec+xx-7,dec+yy-8,3,"black")
+      CreateCircle(dec+xx-7,dec+yy-8,3,eyes_color)
        
       # oeil droit
       CreateCircle(dec+xx+7,dec+yy-8,5,"white")
-      CreateCircle(dec+xx+7,dec+yy-8,3,"black")
+      CreateCircle(dec+xx+7,dec+yy-8,3,eyes_color)
       
       dec += 3
       
@@ -580,7 +590,7 @@ def PlayOneTurn():
             MODE_CHASSE=False
             cpt=0
    
-   Affiche(PacmanColor="yellow", message="Score : {}".format(score))
+   Affiche(pacman_color, message="Score : {}".format(score))
  
  
 ###########################################:
