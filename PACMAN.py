@@ -390,8 +390,9 @@ def IAPacman():
    PacManPos[0] += L[choix][0]
    PacManPos[1] += L[choix][1]
 
+   print("pacman ")
    test_collision()
-   affichage_distances(new_map, new)
+   #affichage_distances(new_map, new)
 
 
 def affichage_distances(new_map, new):
@@ -548,8 +549,10 @@ def IAGhosts():
         # On met à jour l'état du fantôme que s'il est sorti de la maison des fantômes
         if TBL[F[0]][F[1]] != 2:
             F[4] = True
-
+            
+    print("ghost ")
     test_collision()
+        
 
 MODE_CHASSE= False
 
@@ -558,13 +561,17 @@ def test_collision():
    collision = False
    for F in Ghosts :
       collision = PacManPos[0]==F[0] and PacManPos[1]==F[1]
+      print(f"pos : {PacManPos}, et [{F[0]},{F[1]}]")
       if collision == True :
+         print(f"Collision : {PacManPos}, et [{F[0]},{F[1]}]")
          if MODE_CHASSE :
+            print(f"chasse Collision : {PacManPos}, et [{F[0]},{F[1]}]")
             new_coord = random.choice(maison)
             F[0]=new_coord[0]
             F[1]=new_coord[1]
             F[4]=False
             score+=2000
+            print(f"fant : {F[0]},{F[1]}")
             
          else: 
             END_FLAG = True
@@ -586,10 +593,9 @@ def PlayOneTurn():
 
       if MODE_CHASSE :
          cpt+=1 
-         if cpt==16:
+         if cpt==1600:
             MODE_CHASSE=False
             cpt=0
-   
    Affiche(pacman_color, message="Score : {}".format(score))
  
  
