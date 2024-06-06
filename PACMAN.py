@@ -642,7 +642,7 @@ def PlayOneTurn():
 
       if MODE_CHASSE :
          cpt+=1 
-         if cpt==1600:
+         if cpt==16:
             MODE_CHASSE=False
             cpt=0
    Affiche(pacman_color, message="Score : {}".format(score))
