@@ -595,8 +595,7 @@ def IAGhosts():
         # On met à jour l'état du fantôme que s'il est sorti de la maison des fantômes
         if TBL[F[0]][F[1]] != 2:
             F[4] = True
-            
-    print("ghost ")
+
     test_collision()
 
 def test_collision():
