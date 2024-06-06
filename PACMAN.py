@@ -9,9 +9,10 @@ import numpy as np
 #   Partie I : variables du jeu  -  placez votre code dans cette section
 #
 #########################################################################
-score = 0
-nb_pac_gommes=0
-END_FLAG = False
+score = 0  # Initialisation du score
+nb_pac_gommes = 0  # Nombre initial de pac-gommes
+END_FLAG = False  # indiquer la fin du jeu
+MODE_CHASSE= False #indiquer le mode chasse
 
 # Plan du labyrinthe
 
@@ -56,7 +57,6 @@ def PlacementsGUM():  # placements des pacgums
             
 GUM = PlacementsGUM()   
    
-   
 pacman_color = "yellow"
 
 PacManPos = [5,5]
@@ -67,41 +67,37 @@ Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "orange","left",False] )
 Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "cyan"  ,"left",False]   )
 Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "red"  ,"left",False ]     )         
 
-
-
+# Création de la carte des distances pour Pac-Man
 def create_distance_map(grid):
     global HAUTEUR, LARGEUR, nb_pac_gommes
     T = np.array(grid, dtype=np.int32)
-
-    G = 1000  # Valeur G très grande
+    G = 1000  # Valeur G très grande pour représenter les murs
     M = HAUTEUR * LARGEUR  # Valeur M correspondant à la surface totale du labyrinthe
-
-    for i in range(LARGEUR):  # Utilise LARGEUR pour l'indice i
-        for j in range(HAUTEUR):  # Utilise HAUTEUR pour l'indice j
-            if grid[i][j] == 1:  # Correction de l'ordre des indices
+    for i in range(LARGEUR):  # Boucle sur la largeur
+        for j in range(HAUTEUR):  # Boucle sur la hauteur
+            if grid[i][j] == 1:  # Mur
                 T[i][j] = G
-            elif grid[i][j] == 0:
-                nb_pac_gommes+=1;
+            elif grid[i][j] == 0:  # Espace vide avec pac-gomme
+                nb_pac_gommes += 1
                 T[i][j] = 0
-            else:
+            else:  # Maison des fantômes
                 T[i][j] = M
-
     return T
 
+
+# Création de la carte des distances pour les fantômes
 def create_distance_map_ghost(grid):
-    global HAUTEUR, LARGEUR 
+    global HAUTEUR, LARGEUR
     T = np.array(grid, dtype=np.int32)
-
-    G = 1000  # Valeur G très grande
+    G = 1000  # Valeur G très grande pour représenter les murs
     M = HAUTEUR * LARGEUR  # Valeur M correspondant à la surface totale du labyrinthe
-
-    for i in range(LARGEUR):  # Utilise LARGEUR pour l'indice i
-        for j in range(HAUTEUR):  # Utilise HAUTEUR pour l'indice j # Fantômes ne peuvent pas traverser les murs ou la maison des fantômes
-                T[i][j] = G
-                
+    for i in range(LARGEUR):  # Boucle sur la largeur
+        for j in range(HAUTEUR):  # Boucle sur la hauteur
+            T[i][j] = G
     for F in Ghosts:
-      T[F[0]][F[1]] =0 
+        T[F[0]][F[1]] = 0  # Position initiale des fantômes
     return T
+
 
 # Création de la carte des distances
 distance_map = create_distance_map(TBL)
@@ -281,12 +277,11 @@ def Affiche(PacmanColor,message):
          canvas.create_text(xx,yy, text = txt, fill ="yellow", font=("Purisa", 8)) 
          
   
-   # dessine pacman
-         
+   # dessine pacman          
       if MODE_CHASSE:
-         pacman_color="#FB00FF"
+         pacman_color="#FB00FF" #rose
       else :
-         pacman_color="yellow"
+         pacman_color="yellow" #jaune
    xx = To(PacManPos[0]) 
    yy = To(PacManPos[1])
    e = 20
@@ -310,9 +305,9 @@ def Affiche(PacmanColor,message):
       canvas.create_rectangle(dec+xx-e,dec+yy-e,dec+xx+e+1,dec+yy+e, fill=coul, width  = 0)
       
       if MODE_CHASSE:
-         eyes_color="white"
+         eyes_color="white" #blanc
       else :
-         eyes_color="black"
+         eyes_color="black" #noir
 
       # oeil gauche
       CreateCircle(dec+xx-7,dec+yy-8,5,"white")
@@ -356,124 +351,162 @@ def GhostsPossibleMove(x, y, is_outside):
     return L
 
 
+# Indicateur de collision entre Pac-Man et un fantôme
 collision = False
-   
-new=distance_map_G
 
+# Copie de la carte des distances pour les fantômes
+new_distance_map_G = distance_map_G
+
+# Liste des positions des fantômes dans la maison des fantômes
 maison = [(F[0], F[1]) for F in Ghosts if TBL[F[0]][F[1]] == 2]
 
-
+# Fonction d'intelligence artificielle pour Pac-Man
 def IAPacman():
-   global PacManPos, Ghosts, score, nb_pac_gommes, collision, new, MODE_CHASSE
-   new_map=update_distance_map(distance_map)
-   new=update_distance_map_ghost(distance_map_G)
-   #deplacement Pacman
-   L = PacManPossibleMove()
-   #pacman mange
-   gum_val=GUM[PacManPos[0]][PacManPos[1]]
-   if gum_val==1 or gum_val==3:
-      GUM[PacManPos[0]][PacManPos[1]]=0
-      score += 100
-      nb_pac_gommes-=1
+    global PacManPos, Ghosts, score, nb_pac_gommes, collision, new_distance_map_G, MODE_CHASSE
+    
+    # Mise à jour de la carte des distances pour Pac-Man
+    new_map = update_distance_map(distance_map)
+    # Mise à jour de la carte des distances pour les fantômes
+    new_distance_map_G = update_distance_map_ghost(distance_map_G)
+    
+    # Détermination des mouvements possibles pour Pac-Man
+    L = PacManPossibleMove()
+    
+    # Vérifie si Pac-Man mange une pac-gomme ou une super pac-gomme
+    gum_val = GUM[PacManPos[0]][PacManPos[1]]
+    if gum_val == 1 or gum_val == 3:
+        GUM[PacManPos[0]][PacManPos[1]] = 0  # Enlève la pac-gomme de la grille
+        score += 100  # Augmente le score de 100 points
+        nb_pac_gommes -= 1  # Décrémente le nombre de pac-gommes restantes
 
-      if gum_val == 3 : 
-         MODE_CHASSE=True
+        if gum_val == 3:
+            MODE_CHASSE = True  # Active le mode chasse si Pac-Man mange une super pac-gomme
+    
+    # Choix du mouvement de Pac-Man en fonction du mode chasse et des distances aux fantômes
+    if MODE_CHASSE:
+        # Recherche un fantôme à chasser
+        choix = recherche(new_distance_map_G, L)
+    elif new_distance_map_G[PacManPos[0]][PacManPos[1]] > 3:
+        # Se déplace normalement si les fantômes sont éloignés
+        choix = recherche(new_map, L)
+    else:
+        # Fuit les fantômes s'ils sont proches
+        choix = fuite(new_distance_map_G, L)
+    
+    # Met à jour la position de Pac-Man en ajoutant les coordonnées du mouvement choisi
+    PacManPos[0] += L[choix][0]
+    PacManPos[1] += L[choix][1]
 
-   if MODE_CHASSE : 
-      choix = recherche(new,L)
-   elif new[PacManPos[0]][PacManPos[1]]>3:
-      choix = recherche(new_map,L)
-   else : 
-      choix = fuite(new,L)
-
-   # Mettre à jour la position de Pac-Man
-   PacManPos[0] += L[choix][0]
-   PacManPos[1] += L[choix][1]
-
-   print("pacman ")
-   test_collision()
-   #affichage_distances(new_map, new)
+    # Vérifie les collisions entre Pac-Man et les fantômes
+    test_collision()
+    
+    # Affiche les distances mises à jour sur la grille (à des fins de débogage)
+    affichage_distances(new_map, new_distance_map_G)
 
 
-def affichage_distances(new_map, new):
+def affichage_distances(new_map, new_distance_map_G):
    # juste pour montrer comment on se sert de la fonction SetInfo1
    for x in range(LARGEUR):
       for y in range(HAUTEUR):
          info = "{}".format(new_map[x][y])
          if(new_map[x][y]<HAUTEUR*LARGEUR and new_map[x][y]!=0):
             SetInfo1(x,y,info)
-         info2 = "{}".format(new[x][y])
-         if(new[x][y]<HAUTEUR*LARGEUR ):
+         info2 = "{}".format(new_distance_map_G[x][y])
+         if(new_distance_map_G[x][y]<HAUTEUR*LARGEUR ):
             SetInfo2(x,y,info2)
 
-def recherche(new_map,L):
-   #choix = random.randrange(len(L))
+def recherche(new_map, L):
+    # Fonction qui recherche le meilleur mouvement possible pour Pac-Man en fonction de la carte des distances
+
     # Initialiser une liste pour stocker les distances valides et leurs indices
-   distances_voisins = []
+    distances_voisins = []
+    
     # Vérifier chaque mouvement possible
-   for index, (dx, dy) in enumerate(L):
-      new_x = PacManPos[0] + dx
-      new_y = PacManPos[1] + dy
-      if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:  # Vérifie que la nouvelle position est dans la grille
-         if new_map[new_x][new_y] != 1000:  # Vérifie que la nouvelle position n'est pas un obstacle
-            distances_voisins.append((new_map[new_x][new_y], index))
+    for index, (dx, dy) in enumerate(L):
+        # Calculer la nouvelle position en ajoutant le déplacement à la position actuelle de Pac-Man
+        new_x = PacManPos[0] + dx
+        new_y = PacManPos[1] + dy
+        
+        # Vérifie que la nouvelle position est dans la grille
+        if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:
+            # Vérifie que la nouvelle position n'est pas un obstacle
+            if new_map[new_x][new_y] != 1000:
+                # Ajouter la distance et l'index du mouvement à la liste des distances valides
+                distances_voisins.append((new_map[new_x][new_y], index))
+    
+    # Initialiser les variables pour trouver l'index du mouvement avec la plus petite distance
+    min_distance_index = None
+    min_distance = float('inf')
+    
+    # Si des mouvements valides ont été trouvés, trouver l'index du mouvement avec la distance minimale
+    if distances_voisins:
+        for distance, index in distances_voisins:
+            # Mettre à jour la distance minimale et l'index correspondant
+            if distance < min_distance:
+                min_distance = distance
+                min_distance_index = index
+    
+    # Retourner l'index du mouvement avec la plus petite distance trouvée
+    return min_distance_index
+def fuite(new_distance_map_G, L):
+    # Fonction qui recherche le meilleur mouvement pour fuir les fantômes en fonction de la carte des distances des fantômes
 
-    # Trouver l'index du mouvement avec la plus petite distance
-# Trouver l'index du mouvement avec la plus petite distance
-   if distances_voisins:
-      min_distance_index = None
-      min_distance = float('inf')
-      for distance, index in distances_voisins:
-         if distance < min_distance:
-               min_distance = distance
-               min_distance_index = index
-
-   return min_distance_index
-
-def fuite(new,L):
-   #choix = random.randrange(len(L))
     # Initialiser une liste pour stocker les distances valides et leurs indices
-   distances_voisins = []
+    distances_voisins = []
+    
     # Vérifier chaque mouvement possible
-   for index, (dx, dy) in enumerate(L):
-      new_x = PacManPos[0] + dx
-      new_y = PacManPos[1] + dy
-      if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:  # Vérifie que la nouvelle position est dans la grille
-         if new[new_x][new_y] != 1000:  # Vérifie que la nouvelle position n'est pas un obstacle
-            distances_voisins.append((new[new_x][new_y], index))
-
-    # Trouver l'index du mouvement avec la plus petite distance
-# Trouver l'index du mouvement avec la plus petite distance
-   if distances_voisins:
-      max_distance_index = None
-      max_distance = -1
-      for distance, index in distances_voisins:
-         if distance > max_distance:
-               max_distance = distance
-               max_distance_index = index
-
-   return max_distance_index
-
+    for index, (dx, dy) in enumerate(L):
+        # Calculer la nouvelle position en ajoutant le déplacement à la position actuelle de Pac-Man
+        new_x = PacManPos[0] + dx
+        new_y = PacManPos[1] + dy
+        
+        # Vérifie que la nouvelle position est dans la grille
+        if 0 <= new_x < LARGEUR and 0 <= new_y < HAUTEUR:
+            # Vérifie que la nouvelle position n'est pas un obstacle
+            if new_distance_map_G[new_x][new_y] != 1000:
+                # Ajouter la distance et l'index du mouvement à la liste des distances valides
+                distances_voisins.append((new_distance_map_G[new_x][new_y], index))
+    
+    # Initialiser les variables pour trouver l'index du mouvement avec la plus grande distance
+    max_distance_index = None
+    max_distance = -1
+    
+    # Si des mouvements valides ont été trouvés, trouver l'index du mouvement avec la distance maximale
+    if distances_voisins:
+        for distance, index in distances_voisins:
+            # Mettre à jour la distance maximale et l'index correspondant
+            if distance > max_distance:
+                max_distance = distance
+                max_distance_index = index
+    
+    # Retourner l'index du mouvement avec la plus grande distance trouvée
+    return max_distance_index
 def update_distance_map(distance_map):
-    global PacManPos
-    changement = True  # Initialement, nous supposons qu'il y a des changements
-    while changement:
-        changement = False  # Réinitialiser le drapeau à chaque itération
-        for j in range(1, HAUTEUR - 1):
-            for i in range(1, LARGEUR - 1):
-                if distance_map[i][j] < (HAUTEUR - 1) * (LARGEUR - 1):
-                     #quand pacman mange, on recalcule la distance du points en calculant le minimum
+    global PacManPos 
+    changement = True 
+    while changement:  
+        changement = False 
+        for j in range(1, HAUTEUR - 1):  # Parcours les lignes de la carte de distance
+            for i in range(1, LARGEUR - 1):  # Parcours les colonnes de la carte de distance
+                if distance_map[i][j] < (HAUTEUR - 1) * (LARGEUR - 1):                    
+                    # Si Pac-Man est sur cette case et il y a une pac-gomme
                     if distance_map[i][j] == 0 and PacManPos[0] == i and PacManPos[1] == j:
+                        # Recherche la case voisine avec la distance la plus petite
                         min_neighbor = min(
                             distance_map[PacManPos[0] - 1][PacManPos[1]], 
                             distance_map[PacManPos[0] + 1][PacManPos[1]], 
                             distance_map[PacManPos[0]][PacManPos[1] - 1], 
                             distance_map[PacManPos[0]][PacManPos[1] + 1]
                         )
+                        #distance +1
                         new_distance = min_neighbor + 1
+
+                        #si elle est différente, mise à jour de la distance de la case actuelle
                         if distance_map[i][j] != new_distance:
                             distance_map[i][j] = new_distance
-                            changement = True
+                            changement = True #un changement à eu lieu
+
+                    # Si la case n'est pas une pac-gomme, calcule la distance basée sur les voisins
                     elif distance_map[i][j] != 0:
                         min_neighbor = min(
                             distance_map[i - 1][j], 
@@ -482,45 +515,58 @@ def update_distance_map(distance_map):
                             distance_map[i][j + 1]
                         )
                         new_distance = min_neighbor + 1
+                        # Si la nouvelle distance est différente de la distance actuelle, met à jour et marque un changement
                         if distance_map[i][j] != new_distance:
                             distance_map[i][j] = new_distance
                             changement = True
-    return distance_map
+    return distance_map  # Renvoie la carte de distances mise à jour
 
 def update_distance_map_ghost(distance_map):
-    global Ghosts
+    global Ghosts  # Permet d'accéder aux positions des fantômes depuis l'extérieur de cette fonction
     G = 1000  # Valeur très grande pour les murs et les obstacles
     M = HAUTEUR * LARGEUR  # Valeur correspondant à la surface totale du labyrinthe
 
-    # Initialize the distance map while keeping the walls at 1000
+    # Initialiser la carte de distances tout en maintenant les murs à 1000
     for i in range(LARGEUR):
         for j in range(HAUTEUR):
-            if TBL[i][j] == 1:  # Wall
+            if TBL[i][j] == 1:  # Mur
                 distance_map[i][j] = G
             else:
                 distance_map[i][j] = M
 
-    # Place the ghosts with an initial distance of 0
+    # Placer les fantômes avec une distance initiale de 0
     for F in Ghosts:
         distance_map[F[0]][F[1]] = 0
-    # Use a queue for breadth-first search (BFS)
+    
+    # Utiliser une file d'attente pour la recherche 
     queue = [(F[0], F[1]) for F in Ghosts]
-   #if TBL[x][y] != 2:
-    while queue:
-        x, y = queue.pop(0)
-        if TBL[x][y] == 2 :
-           distance_map[x][y]=HAUTEUR*LARGEUR
-        else :
-         current_distance = distance_map[x][y]
-         # Check neighbors
-         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-               nx, ny = x + dx, y + dy
-               if 0 <= nx < LARGEUR and 0 <= ny < HAUTEUR:
-                  if TBL[nx][ny] != 1 and distance_map[nx][ny] > current_distance + 1:
-                     distance_map[nx][ny] = current_distance + 1
-                     queue.append((nx, ny))
 
-    return distance_map
+    while queue:
+        x, y = queue.pop(0)  # Prendre le premier élément de la file d'attente
+        # Vérifier si la case est dans la maison des fantômes
+        # auquel cas la distance devient la distance maximale
+        if TBL[x][y] == 2:
+            distance_map[x][y] = HAUTEUR * LARGEUR
+        else:
+            # La distance actuelle 
+            current_distance = distance_map[x][y]
+
+            # Vérifie les voisins dans les quatre directions: haut, bas, gauche, droite
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+               # Calcule les nouvelles coordonnées en ajoutant les déplacements dx et dy
+               nx, ny = x + dx, y + dy
+               
+               # Vérifie si les nouvelles coordonnées sont à l'intérieur des limites du labyrinthe
+               if 0 <= nx < LARGEUR and 0 <= ny < HAUTEUR:
+                     # Vérifie si la case n'est pas un mur et si la nouvelle distance est plus courte que la distance actuelle
+                     if TBL[nx][ny] != 1 and distance_map[nx][ny] > current_distance + 1:
+                        # Met à jour la distance vers la case voisine avec une distance plus courte
+                        distance_map[nx][ny] = current_distance + 1
+                        # Ajoute les nouvelles coordonnées à la file d'attente pour les traiter ultérieurement
+                        queue.append((nx, ny))
+
+
+    return distance_map  # Renvoyer la carte de distances mise à jour
 
 
 def IAGhosts():
@@ -552,30 +598,34 @@ def IAGhosts():
             
     print("ghost ")
     test_collision()
-        
-
-MODE_CHASSE= False
 
 def test_collision():
-   global PacManPos, collision, END_FLAG,score, maison
-   collision = False
-   for F in Ghosts :
-      collision = PacManPos[0]==F[0] and PacManPos[1]==F[1]
-      print(f"pos : {PacManPos}, et [{F[0]},{F[1]}]")
-      if collision == True :
-         print(f"Collision : {PacManPos}, et [{F[0]},{F[1]}]")
-         if MODE_CHASSE :
-            print(f"chasse Collision : {PacManPos}, et [{F[0]},{F[1]}]")
-            new_coord = random.choice(maison)
-            F[0]=new_coord[0]
-            F[1]=new_coord[1]
-            F[4]=False
-            score+=2000
-            print(f"fant : {F[0]},{F[1]}")
-            
-         else: 
-            END_FLAG = True
-  
+    global PacManPos, collision, END_FLAG, score, maison
+    
+    # Initialisation de la variable de collision à False
+    collision = False
+    
+    # Parcours de chaque fantôme pour vérifier s'il y a une collision avec Pac-Man
+    for F in Ghosts:
+        # Vérifie si la position de Pac-Man correspond à la position du fantôme actuel
+        collision = PacManPos[0] == F[0] and PacManPos[1] == F[1]
+        
+        # Si une collision est détectée
+        if collision == True:
+            # Si le mode de jeu est MODE_CHASSE
+            if MODE_CHASSE:
+                # Sélectionne aléatoirement une nouvelle position dans la maison pour le fantôme
+                new_coord = random.choice(maison)
+                F[0] = new_coord[0]
+                F[1] = new_coord[1]
+                F[4] = False 
+                score += 2000  # Augmente le score du joueur de 2000 points
+                
+            # Si le mode de jeu n'est pas MODE_CHASSE
+            else: 
+                # Définit la fin de partie à True
+                END_FLAG = True
+
  
 #  Boucle principale de votre jeu appelée toutes les 500ms
 cpt=0
