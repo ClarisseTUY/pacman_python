@@ -5,11 +5,11 @@ import random
 pygame.init()
 
 # Définition des dimensions de la fenêtre et de la zone de jeu
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
 GAME_WIDTH = 600
 GAME_HEIGHT = 400
 SEGMENT_SIZE = 20
+WINDOW_WIDTH = GAME_WIDTH
+WINDOW_HEIGHT = GAME_HEIGHT + 100  # Espace supplémentaire pour afficher le score et les instructions
 
 # Couleurs
 BACKGROUND_COLOR = (0, 0, 0)  # Noir pour le fond
@@ -84,7 +84,7 @@ class SnakeGame:
     def draw_score(self):
         score_text = arcade_font.render(f"Score: {self.score}", True, SCORE_TEXT_COLOR)
         self.screen.blit(score_text, (10, GAME_HEIGHT + 10))
-        pause_text = arcade_font.render("Pause: appuyez sur ESPACE", True, SCORE_TEXT_COLOR)
+        pause_text = arcade_font.render("Pause: touche ESPACE", True, SCORE_TEXT_COLOR)
         self.screen.blit(pause_text, (GAME_WIDTH - 300, GAME_HEIGHT + 10))
 
     def move_snake(self):
