@@ -1,47 +1,35 @@
-import tkinter as tk
+import pygame
 import random
-from collections import deque
+
+# Initialisation de Pygame
+pygame.init()
 
 # Définition des dimensions de la fenêtre et de la zone de jeu
 WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600  # Augmentée pour inclure la zone de score
+WINDOW_HEIGHT = 600
 GAME_WIDTH = 600
-GAME_HEIGHT = 400  # Hauteur de la zone de jeu
+GAME_HEIGHT = 400
 SEGMENT_SIZE = 20
 
 # Couleurs
-BACKGROUND_COLOR = "black"  # Noir pour le fond
-SNAKE_COLOR = "#388E3C"  # Vert foncé
-APPLE_COLOR = "#F44336"  # Rouge vif
-LEAF_COLOR = "#76FF03"  # Vert clair
-SCORE_BACKGROUND = "black"  # Noir
-SCORE_TEXT_COLOR = "#00FF00"  # Vert fluo
-BORDER_COLOR = "#00FF00"  # Vert fluo pour le contour
-DIVIDER_COLOR = "#00FF00"  # Vert fluo pour la délimitation
+BACKGROUND_COLOR = (0, 0, 0)  # Noir pour le fond
+SNAKE_COLOR = (56, 142, 60)  # Vert foncé
+APPLE_COLOR = (244, 67, 54)  # Rouge vif
+LEAF_COLOR = (118, 255, 3)  # Vert clair
+SCORE_BACKGROUND = (0, 0, 0)  # Noir
+SCORE_TEXT_COLOR = (0, 255, 0)  # Vert fluo
+BORDER_COLOR = (0, 255, 0)  # Vert fluo pour le contour
+DIVIDER_COLOR = (0, 255, 0)  # Vert fluo pour la délimitation
 
-# Classe pour représenter le jeu Snake
+# Police pour le score
+pygame.font.init()
+arcade_font = pygame.font.Font(None, 36)
+
 class SnakeGame:
-    def __init__(self, master):
-        self.master = master
-
-        # Cadre pour le score
-        self.score_frame = tk.Frame(master, width=WINDOW_WIDTH, height=50, bg=SCORE_BACKGROUND)
-        self.score_frame.pack_propagate(False)
-        self.score_frame.pack()
-
-        arcade_font = ("Pixelade", 24)  # Police de style arcade
-        self.score_label = tk.Label(self.score_frame, text="Score:", font=arcade_font, bg=SCORE_BACKGROUND, fg=SCORE_TEXT_COLOR)
-        self.score_label.pack(side=tk.LEFT)
-
-        self.score_value = tk.Label(self.score_frame, text="0", font=arcade_font, bg=SCORE_BACKGROUND, fg=SCORE_TEXT_COLOR)
-        self.score_value.pack(side=tk.LEFT)
-
-        self.pause_label = tk.Label(self.score_frame, text="Pause : appuyez sur ESPACE", font=arcade_font, bg=SCORE_BACKGROUND, fg=SCORE_TEXT_COLOR)
-        self.pause_label.pack(side=tk.RIGHT)
-
-        # Cadre pour le jeu
-        self.canvas = tk.Canvas(master, width=GAME_WIDTH, height=GAME_HEIGHT, bg=BACKGROUND_COLOR, highlightthickness=2, highlightbackground=BORDER_COLOR)
-        self.canvas.place(x=(WINDOW_WIDTH - GAME_WIDTH) / 2, y=(WINDOW_HEIGHT - GAME_HEIGHT) / 2 )  # Centrer le canvas dans la fenêtre
+    def __init__(self):
+        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        pygame.display.set_caption("Snake Game")
+        self.clock = pygame.time.Clock()
 
         self.snake = [(100, 100), (80, 100), (60, 100)]
         self.snake_direction = "Right"
@@ -50,17 +38,7 @@ class SnakeGame:
         self.paused = False
         self.score = 0
 
-        self.draw_snake()
-        self.draw_apple()
-        self.draw_divider()
-
-        self.master.bind("<space>", self.toggle_pause)
-        self.move_snake()
-
-    def toggle_pause(self, event):
-        self.paused = not self.paused
-        if not self.paused:
-            self.move_snake()
+        self.run_game()
 
     def set_new_apple_position(self):
         while True:
@@ -71,38 +49,60 @@ class SnakeGame:
                 return apple_position
 
     def draw_snake(self):
-        self.canvas.delete("snake")
         for i, segment in enumerate(self.snake):
             x, y = segment
-            self.canvas.create_rectangle(x, y, x + SEGMENT_SIZE, y + SEGMENT_SIZE, fill=SNAKE_COLOR, tag="snake")
-            if i == 0:  # Dessiner les yeux pour le segment de la tête
-                eye_size = SEGMENT_SIZE // 5
-                offset = SEGMENT_SIZE // 3
-                if self.snake_direction in ["Right", "Left"]:
-                    self.canvas.create_oval(x + offset, y + offset, x + offset + eye_size, y + offset + eye_size, fill="white", tag="snake")
-                    self.canvas.create_oval(x + offset, y + 2 * offset, x + offset + eye_size, y + 2 * offset + eye_size, fill="white", tag="snake")
-                else:
-                    self.canvas.create_oval(x + offset, y + offset, x + offset + eye_size, y + offset + eye_size, fill="white", tag="snake")
-                    self.canvas.create_oval(x + 2 * offset, y + offset, x + 2 * offset + eye_size, y + offset + eye_size, fill="white", tag="snake")
+            if i == 0:  # Dessiner la tête
+                head_x, head_y = x, y
+                if self.snake_direction == "Right":
+                    points = [(head_x, head_y), (head_x + SEGMENT_SIZE, head_y + SEGMENT_SIZE // 2), (head_x, head_y + SEGMENT_SIZE)]
+                    tongue = [(head_x + SEGMENT_SIZE, head_y + SEGMENT_SIZE // 2), (head_x + SEGMENT_SIZE + SEGMENT_SIZE // 2, head_y + SEGMENT_SIZE // 4), (head_x + SEGMENT_SIZE + SEGMENT_SIZE // 2, head_y + 3 * SEGMENT_SIZE // 4)]
+                elif self.snake_direction == "Left":
+                    points = [(head_x + SEGMENT_SIZE, head_y), (head_x, head_y + SEGMENT_SIZE // 2), (head_x + SEGMENT_SIZE, head_y + SEGMENT_SIZE)]
+                    tongue = [(head_x, head_y + SEGMENT_SIZE // 2), (head_x - SEGMENT_SIZE // 2, head_y + SEGMENT_SIZE // 4), (head_x - SEGMENT_SIZE // 2, head_y + 3 * SEGMENT_SIZE // 4)]
+                elif self.snake_direction == "Down":
+                    points = [(head_x, head_y), (head_x + SEGMENT_SIZE // 2, head_y + SEGMENT_SIZE), (head_x + SEGMENT_SIZE, head_y)]
+                    tongue = [(head_x + SEGMENT_SIZE // 2, head_y + SEGMENT_SIZE), (head_x + SEGMENT_SIZE // 4, head_y + SEGMENT_SIZE + SEGMENT_SIZE // 2), (head_x + 3 * SEGMENT_SIZE // 4, head_y + SEGMENT_SIZE + SEGMENT_SIZE // 2)]
+                else:  # self.snake_direction == "Up"
+                    points = [(head_x, head_y + SEGMENT_SIZE), (head_x + SEGMENT_SIZE // 2, head_y), (head_x + SEGMENT_SIZE, head_y + SEGMENT_SIZE)]
+                    tongue = [(head_x + SEGMENT_SIZE // 2, head_y), (head_x + SEGMENT_SIZE // 4, head_y - SEGMENT_SIZE // 2), (head_x + 3 * SEGMENT_SIZE // 4, head_y - SEGMENT_SIZE // 2)]
+                pygame.draw.polygon(self.screen, SNAKE_COLOR, points)
+                pygame.draw.lines(self.screen, (255, 0, 0), False, tongue, 2)
+            else:  # Dessiner le corps
+                pygame.draw.rect(self.screen, SNAKE_COLOR, (x, y, SEGMENT_SIZE, SEGMENT_SIZE))
 
     def draw_apple(self):
-        self.canvas.delete("apple")
         x, y = self.apple_position
-        self.canvas.create_oval(x, y, x + SEGMENT_SIZE, y + SEGMENT_SIZE, fill=APPLE_COLOR, tag="apple")
+        pygame.draw.ellipse(self.screen, APPLE_COLOR, (x, y, SEGMENT_SIZE, SEGMENT_SIZE))
         # Dessiner une feuille sur la pomme
         leaf_offset_x = SEGMENT_SIZE // 3
         leaf_offset_y = SEGMENT_SIZE // 4
-        self.canvas.create_oval(x + leaf_offset_x, y - leaf_offset_y, x + leaf_offset_x + SEGMENT_SIZE // 4, y - leaf_offset_y + SEGMENT_SIZE // 4, fill=LEAF_COLOR, tag="apple")
+        pygame.draw.ellipse(self.screen, LEAF_COLOR, (x + leaf_offset_x, y - leaf_offset_y, SEGMENT_SIZE // 4, SEGMENT_SIZE // 4))
 
     def draw_divider(self):
-        # Dessiner la délimitation entre la zone de jeu et la zone de score
-        self.canvas.create_line(0, 0, GAME_WIDTH, 0, fill=DIVIDER_COLOR, width=2)
+        pygame.draw.line(self.screen, DIVIDER_COLOR, (0, GAME_HEIGHT), (GAME_WIDTH, GAME_HEIGHT), 2)
+
+    def draw_score(self):
+        score_text = arcade_font.render(f"Score: {self.score}", True, SCORE_TEXT_COLOR)
+        self.screen.blit(score_text, (10, GAME_HEIGHT + 10))
+        pause_text = arcade_font.render("Pause: appuyez sur ESPACE", True, SCORE_TEXT_COLOR)
+        self.screen.blit(pause_text, (GAME_WIDTH - 300, GAME_HEIGHT + 10))
 
     def move_snake(self):
         if self.game_over or self.paused:
             return
 
         head_x, head_y = self.snake[0]
+
+        # Calculer la nouvelle direction pour aller vers la pomme
+        apple_x, apple_y = self.apple_position
+        if head_x < apple_x and self.snake_direction != "Left":
+            self.snake_direction = "Right"
+        elif head_x > apple_x and self.snake_direction != "Right":
+            self.snake_direction = "Left"
+        elif head_y < apple_y and self.snake_direction != "Up":
+            self.snake_direction = "Down"
+        elif head_y > apple_y and self.snake_direction != "Down":
+            self.snake_direction = "Up"
 
         if self.snake_direction == "Right":
             new_head = (head_x + SEGMENT_SIZE, head_y)
@@ -115,7 +115,6 @@ class SnakeGame:
 
         if new_head in self.snake or not (0 <= new_head[0] < GAME_WIDTH and 0 <= new_head[1] < GAME_HEIGHT):
             self.game_over = True
-            self.canvas.create_text(GAME_WIDTH / 2, GAME_HEIGHT / 2, text="GAME OVER", fill="white", font=("Pixelade", 24))
             return
 
         self.snake = [new_head] + self.snake[:-1]
@@ -123,52 +122,50 @@ class SnakeGame:
         if new_head == self.apple_position:
             self.snake.append(self.snake[-1])
             self.apple_position = self.set_new_apple_position()
-            self.draw_apple()
             self.score += 100
-            self.score_value.config(text=str(self.score))
-
-        self.draw_snake()
-        self.master.after(100, self.move_snake)
-        self.update_direction()
 
     def update_direction(self):
-        head = self.snake[0]
-        apple = self.apple_position
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RIGHT] and self.snake_direction != "Left":
+            self.snake_direction = "Right"
+        elif keys[pygame.K_LEFT] and self.snake_direction != "Right":
+            self.snake_direction = "Left"
+        elif keys[pygame.K_DOWN] and self.snake_direction != "Up":
+            self.snake_direction = "Down"
+        elif keys[pygame.K_UP] and self.snake_direction != "Down":
+            self.snake_direction = "Up"
 
-        directions = ["Right", "Left", "Down", "Up"]
-        moves = [(SEGMENT_SIZE, 0), (-SEGMENT_SIZE, 0), (0, SEGMENT_SIZE), (0, -SEGMENT_SIZE)]
-        dir_dict = dict(zip(directions, moves))
+    def toggle_pause(self):
+        self.paused = not self.paused
 
-        queue = deque([(head, [])])
-        visited = set()
-        visited.add(head)
+    def run_game(self):
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.toggle_pause()
 
-        while queue:
-            current_pos, path = queue.popleft()
+            if not self.paused and not self.game_over:
+                self.update_direction()
+                self.move_snake()
 
-            if current_pos == apple:
-                if path:
-                    self.snake_direction = path[0]
-                return
+            self.screen.fill(BACKGROUND_COLOR)
+            self.draw_snake()
+            self.draw_apple()
+            self.draw_divider()
+            self.draw_score()
 
-            for direction, move in dir_dict.items():
-                new_pos = (current_pos[0] + move[0], current_pos[1] + move[1])
+            if self.game_over:
+                game_over_text = arcade_font.render("GAME OVER", True, (255, 255, 255))
+                self.screen.blit(game_over_text, (GAME_WIDTH / 2 - 100, GAME_HEIGHT / 2 - 20))
 
-                if (0 <= new_pos[0] < GAME_WIDTH and 0 <= new_pos[1] < GAME_HEIGHT and
-                        new_pos not in self.snake and new_pos not in visited):
-                    queue.append((new_pos, path + [direction]))
-                    visited.add(new_pos)
+            pygame.display.flip()
+            self.clock.tick(10)
 
-        # Si aucun chemin sûr n'est trouvé, continue dans la direction actuelle
-        current_direction_move = dir_dict[self.snake_direction]
-        new_head = (head[0] + current_direction_move[0], head[1] + current_direction_move[1])
-        if new_head in self.snake or not (0 <= new_head[0] < GAME_WIDTH and 0 <= new_head[1] < GAME_HEIGHT):
-            self.snake_direction = random.choice([d for d in directions if d != self.snake_direction])
+        pygame.quit()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Snake Game")
-    root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-    root.configure(bg=BACKGROUND_COLOR)
-    game = SnakeGame(root)
-    root.mainloop()
+    SnakeGame()
