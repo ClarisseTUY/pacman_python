@@ -13,11 +13,11 @@ WINDOW_HEIGHT = GAME_HEIGHT + 100  # Espace supplémentaire pour afficher le sco
 
 # Couleurs
 BACKGROUND_COLOR = (0, 0, 0)  # Noir pour le fond
-SNAKE_COLOR = (56, 142, 60)  # Vert foncé
-APPLE_COLOR = (244, 67, 54)  # Rouge vif
-LEAF_COLOR = (118, 255, 3)  # Vert clair
-SCORE_BACKGROUND = (0, 0, 0)  # Noir
-SCORE_TEXT_COLOR = (0, 255, 0)  # Vert fluo
+SNAKE_COLOR = (56, 142, 60)  # Vert foncé du serpent
+APPLE_COLOR = (244, 67, 54)  # Rouge vif pomme
+LEAF_COLOR = (118, 255, 3)  # Vert clair feuille pomme
+SCORE_BACKGROUND = (0, 0, 0)  # Noir fond
+SCORE_TEXT_COLOR = (0, 255, 0)  # Vert fluo texte
 BORDER_COLOR = (0, 255, 0)  # Vert fluo pour le contour
 DIVIDER_COLOR = (0, 255, 0)  # Vert fluo pour la délimitation
 
@@ -27,6 +27,7 @@ arcade_font = pygame.font.Font(None, 36)
 
 class SnakeGame:
     def __init__(self):
+        """On initialise le jeu du serpent avec les paramètres de base."""
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Snake Game")
         self.clock = pygame.time.Clock()
@@ -41,6 +42,7 @@ class SnakeGame:
         self.run_game()
 
     def set_new_apple_position(self):
+        """On définit une nouvelle position pour la pomme qui ne chevauche pas le serpent."""
         while True:
             x = random.randint(0, (GAME_WIDTH - SEGMENT_SIZE) // SEGMENT_SIZE) * SEGMENT_SIZE
             y = random.randint(0, (GAME_HEIGHT - SEGMENT_SIZE) // SEGMENT_SIZE) * SEGMENT_SIZE
@@ -49,9 +51,10 @@ class SnakeGame:
                 return apple_position
 
     def draw_snake(self):
+        """On dessine le serpent sur l'écran."""
         for i, segment in enumerate(self.snake):
             x, y = segment
-            if i == 0:  # Dessiner la tête
+            if i == 0:  # On dessine la tête du serpent
                 head_x, head_y = x, y
                 if self.snake_direction == "Right":
                     points = [(head_x, head_y), (head_x + SEGMENT_SIZE, head_y + SEGMENT_SIZE // 2), (head_x, head_y + SEGMENT_SIZE)]
@@ -71,29 +74,33 @@ class SnakeGame:
                 pygame.draw.rect(self.screen, SNAKE_COLOR, (x, y, SEGMENT_SIZE, SEGMENT_SIZE))
 
     def draw_apple(self):
+        """On dessine la pomme sur l'écran."""
         x, y = self.apple_position
         pygame.draw.ellipse(self.screen, APPLE_COLOR, (x, y, SEGMENT_SIZE, SEGMENT_SIZE))
-        # Dessiner une feuille sur la pomme
+        # On dessine une feuille sur la pomme
         leaf_offset_x = SEGMENT_SIZE // 3
         leaf_offset_y = SEGMENT_SIZE // 4
         pygame.draw.ellipse(self.screen, LEAF_COLOR, (x + leaf_offset_x, y - leaf_offset_y, SEGMENT_SIZE // 4, SEGMENT_SIZE // 4))
 
     def draw_divider(self):
+        """On dessine la ligne de délimitation entre la zone de jeu et la zone de score."""
         pygame.draw.line(self.screen, DIVIDER_COLOR, (0, GAME_HEIGHT), (GAME_WIDTH, GAME_HEIGHT), 2)
 
     def draw_score(self):
+        """On écrit le score dans la zone du score"""
         score_text = arcade_font.render(f"Score: {self.score}", True, SCORE_TEXT_COLOR)
         self.screen.blit(score_text, (10, GAME_HEIGHT + 10))
         pause_text = arcade_font.render("Pause: touche ESPACE", True, SCORE_TEXT_COLOR)
         self.screen.blit(pause_text, (GAME_WIDTH - 300, GAME_HEIGHT + 10))
 
     def move_snake(self):
+        """On gère les déplacements du serpent"""
         if self.game_over or self.paused:
             return
 
         head_x, head_y = self.snake[0]
 
-        # Calculer la nouvelle direction pour aller vers la pomme
+        # On calcule la nouvelle direction pour aller vers la pomme
         apple_x, apple_y = self.apple_position
         if head_x < apple_x and self.snake_direction != "Left":
             self.snake_direction = "Right"
@@ -125,6 +132,7 @@ class SnakeGame:
             self.score += 100
 
     def update_direction(self):
+        """On met à jour les directions du serpent"""
         keys = pygame.key.get_pressed()
         if keys[pygame.K_RIGHT] and self.snake_direction != "Left":
             self.snake_direction = "Right"
@@ -136,9 +144,11 @@ class SnakeGame:
             self.snake_direction = "Up"
 
     def toggle_pause(self):
+        """Pour pouvoir mettre en pause le jeu"""
         self.paused = not self.paused
 
     def run_game(self):
+        """Pour lancer le jeu"""
         running = True
         while running:
             for event in pygame.event.get():
