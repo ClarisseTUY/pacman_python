@@ -70,7 +70,7 @@ class SnakeGame:
                     tongue = [(head_x + SEGMENT_SIZE // 2, head_y), (head_x + SEGMENT_SIZE // 4, head_y - SEGMENT_SIZE // 2), (head_x + 3 * SEGMENT_SIZE // 4, head_y - SEGMENT_SIZE // 2)]
                 pygame.draw.polygon(self.screen, SNAKE_COLOR, points)
                 pygame.draw.lines(self.screen, (255, 0, 0), False, tongue, 2)
-            else:  # Dessiner le corps
+            else:  # On dessine le corps
                 pygame.draw.rect(self.screen, SNAKE_COLOR, (x, y, SEGMENT_SIZE, SEGMENT_SIZE))
 
     def draw_apple(self):
